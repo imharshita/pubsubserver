@@ -13,17 +13,35 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func TestHandleSubscribe(t *testing.T) {
+func TestHandleSubscribeUnsubscribe(t *testing.T) {
 	ps := NewPubSubServer()
 
-	_, err := ps.newMockConn()
+	// create new websocket connections
+	conn1, err := ps.newMockConn()
 	if err != nil {
 		log.Fatalf("cannot make websocket connection: %v", err)
 	}
 
-	// Check that the connection was added to the server's list of connections
-	if len(ps.conns) != 1 {
-		t.Errorf("Expected 1 connection, but got %d", len(ps.conns))
+	_, err = ps.newMockConn()
+	if err != nil {
+		log.Fatalf("cannot make websocket connection: %v", err)
+	}
+
+	expectedConnections := 2
+	// Check that the connections were added to the server's list of subscriber connections
+	if len(ps.conns) != expectedConnections {
+		t.Errorf("Expected %d connection, but got %d", expectedConnections, len(ps.conns))
+	}
+
+	// test Unsubscribe websocket connection
+	msg := message{Action: "unsubscribe"}
+	if err := conn1.WriteJSON(msg); err != nil {
+		ps.logf("%v", err)
+	}
+
+	// Check that connection is removed when Unsubscribed
+	if len(ps.conns) == 0 {
+		t.Errorf("Expected 0 connection, but got %d", len(ps.conns))
 	}
 }
 
@@ -52,6 +70,7 @@ func TestHandlePublish(t *testing.T) {
 
 	// Create a response recorder to capture the response
 	rr := httptest.NewRecorder()
+
 	ps.handlePublish(rr, req)
 
 	// Check that the response status code is 200 OK
@@ -78,7 +97,7 @@ func TestHandlePublish(t *testing.T) {
 	}
 }
 
-// newMockConn create a new websocket connection and uses handleSubscribe handler upgrades the connection and which adds the new WebSocket
+// newMockConn create a new websocket connection and uses handleSubscribe handler to upgrade the connection and adds the new WebSocket
 // connection to the list of connections.
 func (ps *PubSubServer) newMockConn() (*websocket.Conn, error) {
 	srv := httptest.NewServer(http.HandlerFunc(ps.handleSubscribe))
