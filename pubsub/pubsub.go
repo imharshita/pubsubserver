@@ -97,7 +97,6 @@ func (ps *PubSubServer) handleSubscribe(w http.ResponseWriter, r *http.Request) 
 		ps.logf("Failed to upgrade connection: %v", err)
 		return
 	}
-	defer conn.Close()
 
 	// Add the new WebSocket connection to the list of connections
 	ps.connsMux.Lock()
