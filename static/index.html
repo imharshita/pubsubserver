@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Go Websocket</title>
+
+    <script type="text/javascript">
+        var ws = null;
+
+        function subscribe() {
+            if (ws) {
+                console.log("Already subscribed");
+                return;
+            }
+
+            ws = new WebSocket('ws://localhost:8000/subscribe');
+
+            ws.onopen = () => {
+                console.log("Connected");
+            }
+
+            ws.onmessage = (msg) => {
+                console.log("Server messsage:", msg.data);
+            }
+
+            ws.onclose = () => {
+                console.log("Diconnected");
+                ws = null;
+            }
+        }
+
+        function unsubscribe() {
+            if (!ws) {
+                console.log("Not subscribed");
+                return;
+            }
+
+            ws.send(JSON.stringify({ action: "unsubscribe" }));
+
+            ws.close();
+            ws = null;
+        }
+
+    </script>
+</head>
+
+<body>
+    <button onclick="subscribe()">Subscribe</button>
+    <button onclick="unsubscribe()">Unsubscribe</button>
+</body>
+
+</html>
